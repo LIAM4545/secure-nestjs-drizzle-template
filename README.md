@@ -23,15 +23,21 @@ Instead of assembling auth, RBAC, logging, health checks, and database patterns 
 
 - **Enterprise-Grade Auth (RS256 JWT)** — prevents shared-secret leakage risk with asymmetric keys.
 - **Argon2id Password Hashing** — winner of the Password Hashing Competition; transparent migration from bcrypt on first login.
-- **Refresh Token Rotation + Reuse Detection** — blocks replay attacks and revokes compromised session chains.
-- **Explicit Logout** — `POST /auth/logout` revokes the specific session without waiting for token expiry.
+- **JTI Token Revocation** — every access token carries a unique ID; logout and password change revoke it instantly via Redis blocklist — no waiting for the 15-min TTL.
+- **Refresh Token Rotation + Reuse Detection** — blocks replay attacks and revokes all session JTIs on theft detection.
+- **Credential Stuffing Protection** — per-IP Redis counter; 20 failures/hour → 15-min IP block (HTTP 429) across all accounts.
+- **Session Limits + Device Fingerprinting** — max 10 sessions per user; oldest evicted with JTI revocation; device tracked via SHA-256(User-Agent + IP).
+- **Explicit Logout** — `POST /auth/logout` revokes the DB session AND immediately invalidates the access token via JTI.
 - **Audit-Ready Session Revocation** — preserves `revoked_at` history for forensic integrity.
-- **Database-Driven RBAC** — avoids hardcoded roles and enables immediate permission changes without redeploy.
+- **Database-Driven RBAC** — avoids hardcoded roles; role changes take effect on the next request (no re-login required).
+- **RBAC Audit Trail** — `assignPermissions` logs a before/after diff (`added`, `removed`) to the audit log.
 - **Append-Only Audit Logging** — creates reliable evidence trails for compliance and incident analysis.
 - **Fail-Fast Configuration Validation** — stops insecure startup in production when critical env vars are missing.
 - **Two-Layer Rate Limiting** — global IP-level (`express-rate-limit`) + per-endpoint (`@nestjs/throttler`); login limited to 5 req/min per IP.
 - **Swagger Disabled in Production** — the API blueprint is never publicly exposed in `NODE_ENV=production`.
 - **Soft-Delete Auth Bypass Protection** — deleted users cannot authenticate; `remove()` sets `deletedAt` and `isActive = false` atomically.
+- **PII-Safe Structured Logging** — Pino redacts `authorization`, `cookie`, `password`, and `refresh_token` fields before writing logs.
+- **Correlation ID Injection Prevention** — UUID v4 validation on `X-Correlation-Id`; invalid values discarded and replaced server-side.
 - **Production Observability** — structured logs with correlation IDs, liveness/readiness probes, graceful shutdown.
 - **Drizzle ORM + Migration Workflow** — predictable schema evolution with explicit SQL migrations.
 
@@ -85,6 +91,13 @@ See full details in:
 |---------|----------------|
 | Password hashing | Argon2id (64 MiB / 3t / 4p) |
 | Legacy hash migration | Transparent bcrypt → Argon2id on login |
+| **Access token revocation** | **JTI UUID per token + Redis blocklist (O(1) per request)** |
+| **Credential stuffing** | **Per-IP Redis counter; 20 fail/h → 15-min block (HTTP 429)** |
+| **Session limits** | **Max 10 per user; oldest evicted with JTI revocation** |
+| **Device fingerprinting** | **SHA-256(User-Agent + IP) stored per session** |
+| **RBAC audit trail** | **`assignPermissions` logs before/after diff** |
+| **PII redaction** | **Pino redacts auth header, cookie, passwords, refresh_token** |
+| **Correlation ID validation** | **UUID v4 format enforced; injected values discarded** |
 | Auth rate limit | 5 req/min per IP on `/auth/login` |
 | Refresh rate limit | 10 req/min per IP on `/auth/refresh` |
 | Global rate limit | 300 req/15min per IP |
@@ -97,6 +110,7 @@ See full details in:
 | User enumeration | Uniform error for all login failures |
 | Soft-delete bypass | `deletedAt` + `isActive` set atomically |
 | Password in req.user | Stripped in `JwtStrategy.validate()` |
+| Role staleness | DB reload on every request — JWT `roleId` never trusted |
 
 ## Compliance-Oriented Use Cases
 

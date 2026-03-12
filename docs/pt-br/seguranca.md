@@ -4,10 +4,13 @@
 
 - **JWT RS256:** Assinatura assimétrica. A chave privada nunca sai do servidor; a chave pública pode ser distribuída a validadores.
 - **Tokens de acesso de curta duração:** 15 minutos limitam a exposição em caso de vazamento.
+- **Revogação por JTI (JWT ID):** Cada token de acesso carrega um UUID único `jti`. No logout ou na troca de senha, o JTI é adicionado a uma blocklist no Redis. O `JwtStrategy` realiza uma busca O(1) no Redis antes de aceitar qualquer token — a revogação ocorre *imediatamente*, mesmo dentro do TTL de 15 minutos. Falha aberta se o Redis estiver indisponível (disponibilidade > revogação estrita durante falhas).
 - **Rotação de refresh token:** Cada refresh invalida o token anterior e emite um novo.
-- **Detecção de reutilização:** Se um refresh token revogado for reutilizado, **todas** as sessões do usuário são revogadas imediatamente.
-- **Alteração de senha:** Revoga todas as sessões ativas em todos os dispositivos imediatamente.
-- **Logout:** `POST /auth/logout` revoga a sessão específica associada ao refresh token fornecido.
+- **Detecção de reutilização:** Se um refresh token revogado for reutilizado, **todas** as sessões do usuário são revogadas imediatamente e todos os JTIs de tokens de acesso ativos são adicionados à blocklist.
+- **Alteração de senha:** Revoga todas as sessões e todos os JTIs associados em todos os dispositivos imediatamente.
+- **Logout:** `POST /auth/logout` revoga a sessão específica e invalida seu JTI de acesso imediatamente.
+- **Limite de sessões:** Máximo de 10 sessões ativas por usuário. A sessão mais antiga é removida (e seu JTI revogado) quando o limite é excedido — previne flooding da tabela de sessões.
+- **Fingerprint de dispositivo:** Hash SHA-256 de `User-Agent + IP` armazenado por sessão para fins forenses.
 
 ## Hash de Senhas
 
@@ -98,15 +101,41 @@ trust proxy = 10.0.0.0/8
 ## Proteção de Conta
 
 - **Bloqueio:** 5 logins falhos → bloqueio de 15 minutos.
-- **Auditoria:** `auth.account.locked` e `auth.refresh_token_reuse_detected` registrados.
+- **Detecção de credential stuffing:** Contador de falhas por IP no Redis (`sec:fail:ip:{ip}`). Após 20 falhas em 1 hora do mesmo IP, todas as tentativas de login desse IP são bloqueadas por 15 minutos (HTTP 429). O contador é incrementado mesmo para contas inexistentes, prevenindo probing.
+- **Auditoria:** `auth.account.locked`, `auth.refresh_token_reuse_detected`, `auth.password.changed` e eventos de bloqueio de IP são todos registrados.
 - **Desativação:** Usuários inativos (`isActive = false`) recebem `401` em qualquer requisição autenticada.
 - **Soft-delete:** Usuários excluídos (`deletedAt IS NOT NULL`) são excluídos de todas as queries — não conseguem fazer login mesmo que `isActive` não tenha sido atualizado separadamente. O método `remove()` define `deletedAt` e `isActive = false` de forma atômica.
 - **Senha removida do `req.user`:** O `JwtStrategy.validate()` retorna o objeto do usuário sem o campo `password`. O hash nunca está presente no contexto da requisição.
 - **Prevenção de enumeração de usuários:** O login retorna a mensagem uniforme `"Invalid credentials"` para todos os casos de falha (usuário inexistente, inativo, bloqueado, senha errada).
+- **Role sempre recarregada do banco:** O `JwtStrategy` recarrega o usuário do banco em cada requisição — o `roleId` no claim JWT nunca é confiado. Alterações de role têm efeito imediato sem necessidade de novo login.
 
 ## Formato de Chave de Permissão
 
 O campo `action` de permissões é validado com `@Matches(/^[a-z0-9_-]+$/)` para garantir o formato slug. Isso previne chaves de permissão malformadas como `create OR 1=1`.
+
+## Trilha de Auditoria do RBAC
+
+Toda chamada a `assignPermissions` é auditada com diff antes/depois:
+- `added`: IDs de permissão recém-concedidas
+- `removed`: IDs de permissão revogadas
+- Registrado como `rbac.role.permissions_assigned` no log de auditoria, incluindo o ID do ator.
+
+## Logging Estruturado e Proteção de PII
+
+A opção `redact` do Pino remove campos sensíveis antes de gravar as entradas de log:
+
+| Campo redacted | Substituição |
+|----------------|-------------|
+| `req.headers.authorization` | `[REDACTED]` |
+| `req.headers.cookie` | `[REDACTED]` |
+| `req.body.password` | `[REDACTED]` |
+| `req.body.newPassword` | `[REDACTED]` |
+| `req.body.confirmPassword` | `[REDACTED]` |
+| `req.body.refresh_token` | `[REDACTED]` |
+
+## Prevenção de Injeção de Correlation ID
+
+O header `X-Correlation-Id` é validado no formato UUID v4 antes de ser usado como ID de correlação da requisição. Valores inválidos ou injetados são descartados silenciosamente e substituídos por um UUID gerado pelo servidor. Isso previne injeção de log via header.
 
 ## Requisitos de Produção
 

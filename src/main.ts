@@ -72,7 +72,7 @@ async function bootstrap() {
 
     if (nodeEnv !== 'production') {
       const config = new DocumentBuilder()
-        .setTitle('Admin Limify API')
+        .setTitle('NestJS Security Pro API')
         .setDescription('Enterprise RBAC Administration System')
         .setVersion('1.0.0')
         .addBearerAuth()

@@ -12,10 +12,11 @@ O Prime Nest é um backend NestJS pronto para produção, com estrutura modular 
 | UsersModule | Gestão de usuários (criação via auth/register) |
 | RbacModule | Features, Permissions, Roles, RolePermissions |
 | OrganizationsModule | Entidade Organization (placeholder) |
-| AuditModule | Log de auditoria append-only |
+| AuditModule | Log de auditoria append-only (`@Global`) |
 | HealthModule | Probes de liveness e readiness |
 | GracefulShutdownModule | Encerramento controlado |
-| LoggerModule | Pino e Correlation ID |
+| LoggerModule | Pino, Correlation ID e redaction de PII (`@Global`) |
+| SecurityModule | Revogação de JTI e detecção de credential stuffing (`@Global`) |
 | ThrottlerModule | Rate limiting por endpoint (`@nestjs/throttler`) |
 
 ## Fluxo de Dados
@@ -33,14 +34,17 @@ src/
 ├── auth/              # Fluxos de autenticação
 ├── common/            # Guards, decorators
 ├── config/            # Validação de ambiente (Joi)
-├── logger/            # Pino, middleware de correlation ID
+├── logger/            # Pino, middleware de correlation ID (redaction de PII)
 ├── database/          # Módulo de banco e schema Drizzle
 ├── migrations/        # Scripts de seed
 ├── modules/
-│   ├── audit/        # Log de auditoria
+│   ├── audit/        # Log de auditoria (@Global)
 │   ├── health/       # Health checks
 │   ├── organizations/ # Placeholder Organization
 │   └── rbac/         # Entidades e serviços RBAC
+├── security/          # Módulo de segurança @Global
+│   ├── token-revocation/   # Blocklist Redis de JTI
+│   └── detection/          # Detecção de credential stuffing
 ├── users/            # UsersService
 └── main.ts
 ```

@@ -12,10 +12,11 @@ Prime Nest is a production-ready NestJS backend with a modular structure designe
 | UsersModule | User management (creation via auth/register) |
 | RbacModule | Features, Permissions, Roles, RolePermissions |
 | OrganizationsModule | Organization entity (placeholder) |
-| AuditModule | Append-only audit logging |
+| AuditModule | Append-only audit logging (`@Global`) |
 | HealthModule | Liveness and readiness probes |
 | GracefulShutdownModule | Clean shutdown handling |
-| LoggerModule | Pino + Correlation ID |
+| LoggerModule | Pino + Correlation ID + PII redaction (`@Global`) |
+| SecurityModule | JTI token revocation + credential stuffing detection (`@Global`) |
 | ThrottlerModule | Per-endpoint rate limiting (`@nestjs/throttler`) |
 
 ## Data Flow
@@ -33,14 +34,17 @@ src/
 ├── auth/              # Authentication flows
 ├── common/            # Guards, decorators
 ├── config/            # Environment validation (Joi)
-├── logger/            # Pino, correlation ID middleware
+├── logger/            # Pino, correlation ID middleware (PII redaction)
 ├── database/          # Drizzle database module and schema
 ├── migrations/        # Seed scripts
 ├── modules/
-│   ├── audit/         # Audit log
+│   ├── audit/         # Audit log (@Global)
 │   ├── health/        # Health checks
 │   ├── organizations/ # Organization placeholder
 │   └── rbac/          # RBAC entities and services
+├── security/          # @Global security module
+│   ├── token-revocation/   # Redis JTI blocklist
+│   └── detection/          # Credential stuffing detection
 ├── users/             # UsersService
 └── main.ts
 ```

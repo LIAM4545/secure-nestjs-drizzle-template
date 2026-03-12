@@ -11,6 +11,7 @@ import { rolePermissions } from '@/database/schema/role-permissions.schema';
 import { users } from '@/database/schema/users.schema';
 import { CreateRoleDto, UpdateRoleDto, AssignPermissionsDto } from '../dto/role.dto';
 import { RbacService } from './rbac.service';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
 
 @Injectable()
 export class RoleService {
@@ -19,6 +20,7 @@ export class RoleService {
   constructor(
     private readonly dbService: DatabaseService,
     private rbacService: RbacService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   private get db() {
@@ -133,10 +135,17 @@ export class RoleService {
   ): Promise<void> {
     await this.findOne(roleId);
 
+    // Capture current state for audit diff (V-6: RBAC change audit trail)
+    const before = await this.db
+      .select({ permissionId: rolePermissions.permissionId })
+      .from(rolePermissions)
+      .where(eq(rolePermissions.roleId, roleId));
+    const beforeIds = before.map((r) => r.permissionId);
+
+    const uniquePermissions = [...new Set(dto.permissionIds)];
+
     await this.db.transaction(async (tx) => {
       await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
-
-      const uniquePermissions = [...new Set(dto.permissionIds)];
 
       if (uniquePermissions.length > 0) {
         await tx.insert(rolePermissions).values(
@@ -151,8 +160,19 @@ export class RoleService {
 
     await this.rbacService.invalidateRoleCache(roleId);
 
+    const added = uniquePermissions.filter((id) => !beforeIds.includes(id));
+    const removed = beforeIds.filter((id) => !uniquePermissions.includes(id));
+
     this.logger.log(
-      `Assigned ${dto.permissionIds.length} permissions to role ${roleId} by user ${currentUserId || 'system'}`,
+      `Permissions updated for role ${roleId} by ${currentUserId || 'system'}: +${added.length} added, -${removed.length} removed`,
     );
+
+    await this.auditLogService.log({
+      action: 'rbac.role.permissions_assigned',
+      entityType: 'Role',
+      entityId: roleId,
+      actorUserId: currentUserId,
+      metadata: { added, removed, total: uniquePermissions.length },
+    });
   }
 }

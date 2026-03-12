@@ -15,44 +15,63 @@ The system uses JWT with **RS256**. The private key (`PRIVATE_KEY`) signs tokens
 
 - `sub`: User ID
 - `email`: User email
-- `roleId`: Assigned Role ID
+- `roleId`: Assigned Role ID *(carried for informational purposes — never trusted by the server)*
+- `jti`: JWT ID — unique UUID per token, used for immediate revocation
 
-> **Note:** The `password` field is always stripped from `req.user` before it is attached to the request context. The hash is never accessible to controllers or interceptors.
+> **Note:** The `password` field is always stripped from `req.user`. The `roleId` in the JWT claim is also never trusted — `JwtStrategy` always reloads the user from the database on every request. Role changes take effect immediately without re-login.
 
 ## Flows
 
 ### Login
 
 1. Client sends email and password to `POST /auth/login`.
-2. Server validates credentials — all failure cases return the same `"Invalid credentials"` message to prevent user enumeration.
-3. Checks account `isActive = true` and `deletedAt IS NULL` (soft-deleted accounts cannot login).
-4. On success: returns `access_token` and `refresh_token`.
-5. Refresh token hash (SHA-256) stored in `sessions` with IP and User-Agent.
+2. Server checks IP against the credential stuffing blocklist — if the IP exceeds 20 failures/hour, the request is rejected with HTTP 429 before any user lookup.
+3. Server validates credentials — all failure cases return the same `"Invalid credentials"` message to prevent user enumeration.
+4. Checks account `isActive = true` and `deletedAt IS NULL` (soft-deleted accounts cannot login).
+5. Failed password attempts increment both per-account lockout counter and per-IP suspicious activity counter.
+6. On success: session count is enforced (max 10 per user — oldest evicted with JTI revocation if limit is exceeded).
+7. A unique `jti` UUID is embedded in the access token and stored in the session row.
+8. Returns `access_token` (with JTI) and `refresh_token`. Device fingerprint (SHA-256 of User-Agent + IP) stored with the session.
 
 ### Refresh
 
 1. Client sends `refresh_token` to `POST /auth/refresh`.
 2. Server validates token (RS256 signature + expiry) and session.
-3. If session was revoked (reuse detected), all user sessions are revoked and an error is returned.
-4. On success: new session created, old session revoked; returns new token pair (rotation).
+3. If session was revoked (reuse detected), all user sessions are revoked, all associated JTIs are added to the Redis blocklist, and an error is returned.
+4. On success: old session revoked, old JTI immediately revoked via Redis; new session with a new `jti` created; returns new token pair.
 
 ### Logout
 
 1. Client sends `refresh_token` to `POST /auth/logout` with a valid Bearer token.
-2. Server revokes the session matching that specific token hash.
-3. The access token remains valid until its 15-minute TTL expires (stateless by design).
+2. Server revokes the DB session matching that specific token hash.
+3. The session's `accessTokenJti` is immediately added to the Redis blocklist — the access token is invalid from this point on, not just after the 15-minute TTL.
 
 ### Rotation and Reuse Detection
 
-- Each refresh invalidates the previous token.
-- If a revoked refresh token is reused, the system revokes all user sessions and logs `auth.refresh_token_reuse_detected`.
+- Each refresh invalidates the previous token and its JTI.
+- If a revoked refresh token is reused, the system revokes all user sessions, adds all JTIs to the Redis blocklist, and logs `auth.refresh_token_reuse_detected`.
 - Session chains are traced for forensic audit purposes.
+
+### JTI Revocation (Redis Blocklist)
+
+Every access token carries a `jti` UUID. On logout, refresh rotation, or password change:
+- The JTI is written to Redis as `revoked:jti:{jti}` with TTL equal to the remaining access token lifetime (max 900 seconds).
+- `JwtStrategy` performs an O(1) Redis `GET` on every authenticated request — revoked tokens are rejected immediately, even within their 15-minute window.
+- If Redis is unavailable, the check fails **open** (token is accepted). This trades strict revocation for availability during Redis outages.
+
+### Session Limits
+
+- Maximum **10 concurrent active sessions** per user.
+- On login, if the limit is already reached, the **oldest session is evicted**: its DB record is revoked and its JTI is added to the blocklist.
+- Prevents session table flooding from automated attacks or forgotten devices.
 
 ### Password Change
 
 - `POST /auth/change-password` requires Bearer auth.
-- On password change, **all active (non-revoked) sessions** for the user are revoked.
+- All active session JTIs are collected, then all sessions are revoked in the DB.
+- All collected JTIs are added to the Redis blocklist — **all access tokens are immediately invalid**, not just after their TTL.
 - Already revoked sessions keep their original `revoked_at` timestamp for audit integrity.
+- Event `auth.password.changed` is logged to audit with the count of revoked sessions.
 - User must re-login on every device.
 
 ## Password Hashing
@@ -61,11 +80,18 @@ Passwords are hashed with **Argon2id** (64 MiB, 3 iterations, 4 parallelism). Le
 
 See [Security](./security.md) for full Argon2 parameter rationale.
 
-## Account Lockout
+## Account Lockout and Credential Stuffing Protection
 
+### Per-account lockout
 - After **5 failed login attempts**, the account is locked for **15 minutes**.
-- Event `auth.account.locked` is logged to audit.
+- Event `auth.account.locked` is logged to audit with the failed attempt count.
 - Deactivated or locked users receive `401 Unauthorized`.
+
+### Per-IP credential stuffing detection
+- A Redis counter tracks failed login attempts per IP across all accounts (`sec:fail:ip:{ip}`).
+- After **20 failures in 1 hour** from the same IP, all login requests from that IP are blocked for **15 minutes** (HTTP 429) — regardless of which account is targeted.
+- The counter increments even for nonexistent accounts, preventing enumeration-based stuffing.
+- Block events are logged to audit via `SuspiciousActivityService`.
 
 ## Rate Limiting
 

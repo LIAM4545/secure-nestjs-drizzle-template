@@ -14,6 +14,7 @@ import { LoggerModule } from './logger/logger.module';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { SecurityModule } from './security/security.module';
 import configuration from './config';
 import { validationSchema } from './config/validation.schema';
 
@@ -47,6 +48,7 @@ import { validationSchema } from './config/validation.schema';
     AuditModule,
     HealthModule,
     GracefulShutdownModule,
+    SecurityModule,
     AuthModule,
     UsersModule,
   ],

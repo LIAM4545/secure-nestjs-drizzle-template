@@ -3,9 +3,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from 'src/users/users.module';
+import { AuditModule } from '@/modules/audit/audit.module';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategy/jwt.strategy';
 import { AuthController } from './auth.controller';
+
+// SecurityModule is @Global — TokenRevocationService and SuspiciousActivityService
+// are available here via DI without explicit import.
 
 @Module({
   imports: [
@@ -20,6 +24,7 @@ import { AuthController } from './auth.controller';
       inject: [ConfigService],
     }),
     UsersModule,
+    AuditModule,
   ],
   providers: [AuthService, JwtStrategy],
   exports: [AuthService, JwtModule, PassportModule],

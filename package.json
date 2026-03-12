@@ -3,7 +3,10 @@
   "version": "2.1.0",
   "description": "A production-ready NestJS boilerplate with authentication, TypeORM, Swagger and more.",
   "author": {
-    "name": "Ramos de Souza Janones"
+    "name": "Ramos de Souza Janones",
+    "linkedin": "https://www.linkedin.com/in/ramos-souza/",
+    "github": "https://github.com/RamosJSouza/",
+    "website": "https://ramosdainformatica.com.br/"
   },
   "private": false,
   "license": "MIT",

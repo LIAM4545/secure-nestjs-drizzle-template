@@ -16,6 +16,17 @@ import { CorrelationIdModule } from './correlation-id.module';
             ? { target: 'pino-pretty', options: { colorize: true } }
             : undefined,
         genReqId: (req: any) => req.correlationId || req.id || randomUUID(),
+        redact: {
+          paths: [
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'req.body.password',
+            'req.body.newPassword',
+            'req.body.confirmPassword',
+            'req.body.refresh_token',
+          ],
+          censor: '[REDACTED]',
+        },
         serializers: {
           req: (req: any) => ({
             id: req.correlationId || req.id,

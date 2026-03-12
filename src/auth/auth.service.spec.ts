@@ -5,6 +5,8 @@ import { AuthService } from './auth.service';
 import { UsersService } from 'src/users/users.service';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { DatabaseService } from '@/database/database.service';
+import { TokenRevocationService } from '@/security/token-revocation/token-revocation.service';
+import { SuspiciousActivityService } from '@/security/detection/suspicious-activity.service';
 
 jest.mock('argon2', () => ({
   argon2id: 2,
@@ -19,16 +21,29 @@ describe('AuthService', () => {
 
   const mockInsertValues = jest.fn().mockResolvedValue(undefined);
   const mockInsert = jest.fn().mockReturnValue({ values: mockInsertValues });
-  const mockUpdateSet = jest.fn().mockReturnThis();
-  const mockUpdateWhere = jest.fn().mockResolvedValue([]);
-  const mockUpdate = jest.fn().mockReturnValue({
-    set: mockUpdateSet,
+
+  // update().set().where() — supports both direct await and .returning()
+  const mockUpdateReturning = jest.fn().mockResolvedValue([]);
+  const mockUpdateWhere = jest.fn().mockReturnValue({
+    then: (resolve: any, reject?: any) => Promise.resolve([]).then(resolve, reject),
+    returning: mockUpdateReturning,
   });
-  mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+  const mockUpdateSet = jest.fn().mockReturnValue({ where: mockUpdateWhere });
+  const mockUpdate = jest.fn().mockReturnValue({ set: mockUpdateSet });
+
+  // select().from().where() — supports direct await and .orderBy()
+  const mockSelectWhereResult = {
+    orderBy: jest.fn().mockResolvedValue([]),
+    then: (resolve: any, reject?: any) => Promise.resolve([]).then(resolve, reject),
+  };
+  const mockSelectFromObj = { where: jest.fn().mockReturnValue(mockSelectWhereResult) };
+  const mockSelectTopObj = { from: jest.fn().mockReturnValue(mockSelectFromObj) };
+  const mockSelect = jest.fn().mockReturnValue(mockSelectTopObj);
 
   const mockDb = {
     insert: mockInsert,
     update: mockUpdate,
+    select: mockSelect,
     query: {
       sessions: {
         findMany: jest.fn(),
@@ -53,6 +68,17 @@ describe('AuthService', () => {
     log: jest.fn().mockResolvedValue(undefined),
   };
 
+  const mockTokenRevocationService = {
+    revokeToken: jest.fn().mockResolvedValue(undefined),
+    revokeMany: jest.fn().mockResolvedValue(undefined),
+    isRevoked: jest.fn().mockResolvedValue(false),
+  };
+
+  const mockSuspiciousActivityService = {
+    isIpBlocked: jest.fn().mockResolvedValue(false),
+    recordFailedAttempt: jest.fn().mockResolvedValue(false),
+  };
+
   const mockDatabaseService = { db: mockDb };
 
   beforeEach(async () => {
@@ -66,6 +92,8 @@ describe('AuthService', () => {
         { provide: UsersService, useValue: mockUsersService },
         { provide: AuditLogService, useValue: mockAuditLogService },
         { provide: DatabaseService, useValue: mockDatabaseService },
+        { provide: TokenRevocationService, useValue: mockTokenRevocationService },
+        { provide: SuspiciousActivityService, useValue: mockSuspiciousActivityService },
       ],
     }).compile();
 

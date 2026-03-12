@@ -11,10 +11,15 @@ declare global {
   }
 }
 
+// UUID v4 format — rejects injected payloads, logs only controlled identifiers
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class CorrelationIdMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction): void {
-    const correlationId = (req.headers['x-correlation-id'] as string) || randomUUID();
+    const incoming = req.headers['x-correlation-id'] as string | undefined;
+    const correlationId =
+      incoming && UUID_V4_RE.test(incoming) ? incoming : randomUUID();
     req.correlationId = correlationId;
     (req as any).id = correlationId;
 

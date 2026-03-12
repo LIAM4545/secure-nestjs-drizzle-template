@@ -3,6 +3,7 @@ import { ConflictException } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { RbacService } from './rbac.service';
 import { DatabaseService } from '@/database/database.service';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
 
 describe('RoleService', () => {
   let service: RoleService;
@@ -44,10 +45,13 @@ describe('RoleService', () => {
     jest.clearAllMocks();
     mockRbacService = { invalidateRoleCache: jest.fn() };
 
-    // Default chaining
+    // Default chaining — where() is thenable (resolves to []) so direct `await` works
     mockDb.select.mockReturnValue({ from: mockDb.from });
     mockDb.from.mockReturnValue({ where: mockDb.where });
-    mockDb.where.mockReturnValue({ limit: mockDb.limit });
+    mockDb.where.mockReturnValue({
+      limit: mockDb.limit,
+      then: (resolve: any, reject?: any) => Promise.resolve([]).then(resolve, reject),
+    });
     mockDb.update.mockReturnValue({ set: mockDb.set });
     mockDb.set.mockReturnValue({ where: mockDb.where });
     mockDb.delete.mockReturnValue({ where: mockDb.where });
@@ -57,6 +61,7 @@ describe('RoleService', () => {
         RoleService,
         { provide: DatabaseService, useValue: mockDatabaseService },
         { provide: RbacService, useValue: mockRbacService },
+        { provide: AuditLogService, useValue: { log: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 
