@@ -8,6 +8,8 @@ import { DatabaseService } from '@/database/database.service';
 
 describe('AuthService', () => {
   let service: AuthService;
+  const TEST_LOGIN_CREDENTIAL = 'unit-test-credential-login';
+  const TEST_REGISTER_CREDENTIAL = 'unit-test-credential-register';
 
   const mockInsertValues = jest.fn().mockResolvedValue(undefined);
   const mockInsert = jest.fn().mockReturnValue({ values: mockInsertValues });
@@ -70,7 +72,7 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should return access token for valid credentials', async () => {
-      const loginDto = { email: 'test@example.com', password: 'password123' };
+      const loginDto = { email: 'test@example.com', password: TEST_LOGIN_CREDENTIAL };
       const mockUser = {
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         email: 'test@example.com',
@@ -136,7 +138,11 @@ describe('AuthService', () => {
 
   describe('register', () => {
     it('should create user successfully', async () => {
-      const registerDto = { email: 'new@example.com', name: 'New User', password: 'pass123' };
+      const registerDto = {
+        email: 'new@example.com',
+        name: 'New User',
+        password: TEST_REGISTER_CREDENTIAL,
+      };
       mockUsersService.findOne.mockResolvedValue(null);
       mockUsersService.create.mockResolvedValue({ id: 'new-uuid', ...registerDto });
 
