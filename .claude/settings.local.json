@@ -16,7 +16,8 @@
       "Bash(npm audit:*)",
       "Bash(npm ls:*)",
       "Bash(npm pack:*)",
-      "Bash(then find:*)"
+      "Bash(then find:*)",
+      "Bash(git restore:*)"
     ]
   }
 }

@@ -2,12 +2,13 @@
 
 [![CI](https://github.com/RamosJSouza/secure-nestjs-drizzle-template/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/RamosJSouza/secure-nestjs-drizzle-template/actions/workflows/ci.yml)
 [![CD](https://github.com/RamosJSouza/secure-nestjs-drizzle-template/actions/workflows/cd.yml/badge.svg)](https://github.com/RamosJSouza/secure-nestjs-drizzle-template/actions/workflows/cd.yml)
-[![codecov](https://codecov.io/gh/RamosJSouza/secure-nestjs-drizzle-template/branch/main/graph/badge.svg)](https://codecov.io/gh/RamosJSouza/secure-nestjs-drizzle-template)
+[![Coverage](https://img.shields.io/codecov/c/github/RamosJSouza/secure-nestjs-drizzle-template?logo=codecov&label=coverage)](https://codecov.io/gh/RamosJSouza/secure-nestjs-drizzle-template)
 [![NestJS](https://img.shields.io/badge/NestJS-11-E0234E.svg?logo=nestjs&logoColor=white)](https://nestjs.com/)
 [![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.44-C5F74F.svg)](https://orm.drizzle.team/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![Docker](https://img.shields.io/badge/ghcr.io-secure--nestjs--drizzle--template-2496ED.svg?logo=docker&logoColor=white)](https://github.com/RamosJSouza/secure-nestjs-drizzle-template/pkgs/container/secure-nestjs-drizzle-template)
 [![Node](https://img.shields.io/badge/node-%3E%3D24.0.0-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Swagger UI](https://img.shields.io/badge/Swagger_UI-dev_only-85EA2D.svg?logo=swagger&logoColor=white)](http://localhost:3000/api/docs)
 
 Production-ready secure backend architecture with NestJS, Drizzle ORM, RBAC, and JWT RS256.
 
